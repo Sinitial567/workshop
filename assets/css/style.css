@@ -291,28 +291,6 @@ body[data-theme="dark"] .todo-due-input::-webkit-calendar-picker-indicator { fil
 .todo-item.prio-medium { --prio-bg: rgba(255, 212, 59, 0.12); --prio-bg-hover: rgba(255, 212, 59, 0.20); --prio-border: rgba(255, 212, 59, 0.34); }
 .todo-item.prio-low { --prio-bg: rgba(81, 207, 102, 0.12); --prio-bg-hover: rgba(81, 207, 102, 0.20); --prio-border: rgba(81, 207, 102, 0.30); }
 
-.todo-toggle { display: none; }
-
-@media (max-width: 720px) {
-  .todo-toggle.show-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    margin-top: 10px;
-    padding: 9px 12px;
-    border: 1px dashed var(--border);
-    border-radius: 12px;
-    background: var(--control-bg);
-    color: var(--dim);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .todo-toggle.show-toggle:hover { color: var(--text); border-color: var(--accent); }
-  .todo-list.collapsed .todo-item:nth-child(n+4) { display: none; }
-}
-
 /* 便签 */
 .notes-toolbar { margin-bottom: 12px; }
 .notes-grid {
@@ -660,4 +638,5 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
   .weather-temp { font-size: 38px; }
   .bookmark-form { grid-template-columns: 1fr; }
   .bookmark-form .btn { grid-column: span 1; }
+  .todo-list { max-height: 300px; overflow-y: auto; }
 }

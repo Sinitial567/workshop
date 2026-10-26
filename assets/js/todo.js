@@ -36,12 +36,10 @@ export function initTodo() {
       <input class="input todo-input" type="text" placeholder="添加待办，回车确认…" maxlength="200" required />
       <button class="btn" type="submit">添加</button>
     </form>
-    <ul class="todo-list"></ul>
-    <button class="todo-toggle" type="button">展开全部</button>`;
+    <ul class="todo-list"></ul>`;
   const form = body.querySelector('.todo-form');
   const input = body.querySelector('.todo-input');
   const list = body.querySelector('.todo-list');
-  const toggle = body.querySelector('.todo-toggle');
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -79,14 +77,6 @@ export function initTodo() {
     render();
   });
 
-  const COLLAPSE_LIMIT = 3;
-  let todoExpanded = false;
-
-  toggle.addEventListener('click', () => {
-    todoExpanded = !todoExpanded;
-    render();
-  });
-
   list.addEventListener('click', (e) => {
     if (!e.target.matches('.todo-del')) return;
     const item = e.target.closest('.todo-item');
@@ -118,8 +108,6 @@ export function initTodo() {
     list.innerHTML = '';
     if (!todos.length) {
       list.innerHTML = '<li class="empty-hint">还没有待办，添加一条开始吧</li>';
-      toggle.classList.remove('show-toggle');
-      list.classList.remove('collapsed');
       return;
     }
     for (const t of todos) {
@@ -146,12 +134,6 @@ export function initTodo() {
       if (isOverdue(t)) li.querySelector('.todo-due').classList.add('overdue');
       list.appendChild(li);
     }
-
-    const count = todos.length;
-    const collapsed = count > COLLAPSE_LIMIT && !todoExpanded;
-    list.classList.toggle('collapsed', collapsed);
-    toggle.classList.toggle('show-toggle', count > COLLAPSE_LIMIT);
-    toggle.textContent = collapsed ? `展开全部 ${count} 条` : '收起';
   }
 
   onDataChanged(render);
