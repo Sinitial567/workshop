@@ -206,19 +206,36 @@ async function searchCity(q, resultsEl) {
   }
   resultsEl.innerHTML = '<div class="city-hint">搜索中…</div>';
   try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=zh&format=json`;
-    const res = await fetch(url);
-    const json = await res.json();
-    const list = json.results || [];
+    const queries = [q];
+    if (!/市$/.test(q)) queries.push(q + '市');
+    let list = [];
+    for (const query of queries) {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=6&language=zh&format=json`;
+      const res = await fetch(url);
+      const json = await res.json();
+      const found = json.results || [];
+      list = list.concat(found);
+      if (found.length) break;
+    }
     if (!list.length) {
       resultsEl.innerHTML = '<div class="city-hint">未找到城市，换个名字试试</div>';
       return;
     }
+    list.sort((a, b) => (b.population || 0) - (a.population || 0));
+    const seen = new Set();
+    list = list.filter((item) => {
+      const key = item.name || '';
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     resultsEl.innerHTML = '';
-    for (const item of list) {
+    for (const item of list.slice(0, 6)) {
       const div = document.createElement('div');
       div.className = 'city-result';
-      div.textContent = [item.name, item.admin1, item.country].filter(Boolean).join(' · ');
+      const admin1 = item.admin1 || '';
+      const showAdmin1 = admin1 && admin1 !== item.name && admin1 !== item.name + '市' && admin1 !== item.name + '省' && admin1 !== item.name + '自治区';
+      div.textContent = [item.name, showAdmin1 ? admin1 : '', item.country].filter(Boolean).join(' · ');
       div.addEventListener('click', () => {
         const s = getState();
         s.city = {
@@ -238,4 +255,3 @@ async function searchCity(q, resultsEl) {
     resultsEl.innerHTML = '<div class="city-hint">搜索失败，请检查网络</div>';
   }
 }
-
