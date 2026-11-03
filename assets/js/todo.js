@@ -36,10 +36,16 @@ export function initTodo() {
       <input class="input todo-input" type="text" placeholder="添加待办，回车确认…" maxlength="200" required />
       <button class="btn" type="submit">添加</button>
     </form>
+    <input class="input todo-search" type="search" placeholder="搜索待办…" />
     <ul class="todo-list"></ul>`;
   const form = body.querySelector('.todo-form');
   const input = body.querySelector('.todo-input');
+  const search = body.querySelector('.todo-search');
   const list = body.querySelector('.todo-list');
+  let editingId = null;
+  let query = '';
+
+  pruneDone();
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -58,6 +64,11 @@ export function initTodo() {
     if (item) animateIn(item);
   });
 
+  search.addEventListener('input', () => {
+    query = search.value.trim().toLowerCase();
+    render();
+  });
+
   list.addEventListener('change', (e) => {
     const item = e.target.closest('.todo-item');
     if (!item) return;
@@ -65,7 +76,8 @@ export function initTodo() {
     if (!todo) return;
     if (e.target.matches('.todo-check')) {
       todo.done = e.target.checked;
-      if (todo.done) todo.reminded = true;
+      if (todo.done) { todo.reminded = true; todo.doneAt = Date.now(); }
+      else { todo.doneAt = null; }
     } else if (e.target.matches('.todo-due-input')) {
       todo.due = e.target.value;
       todo.reminded = false;
@@ -78,16 +90,71 @@ export function initTodo() {
   });
 
   list.addEventListener('click', (e) => {
-    if (!e.target.matches('.todo-del')) return;
     const item = e.target.closest('.todo-item');
-    const arr = getState().todos;
-    const idx = arr.findIndex(t => t.id === item.dataset.id);
-    if (idx > -1) { arr.splice(idx, 1); saveState(); emitDataChanged(); render(); }
+    if (!item) return;
+    const id = item.dataset.id;
+
+    if (e.target.matches('.todo-del')) {
+      const arr = getState().todos;
+      const idx = arr.findIndex(t => t.id === id);
+      if (idx > -1) { arr.splice(idx, 1); saveState(); emitDataChanged(); render(); }
+    } else if (e.target.matches('.todo-edit')) {
+      editingId = id;
+      render();
+      const editInput = list.querySelector('.todo-edit-input');
+      if (editInput) { editInput.focus(); editInput.select(); }
+    } else if (e.target.matches('.todo-edit-save')) {
+      saveEdit(id);
+    } else if (e.target.matches('.todo-edit-cancel')) {
+      editingId = null;
+      render();
+    }
   });
 
+  list.addEventListener('keydown', (e) => {
+    if (!e.target.matches('.todo-edit-input')) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(e.target.closest('.todo-item').dataset.id);
+    } else if (e.key === 'Escape') {
+      editingId = null;
+      render();
+    }
+  });
+
+  function saveEdit(id) {
+    const editInput = list.querySelector('.todo-edit-input');
+    const todo = getState().todos.find(t => t.id === id);
+    if (!todo) { editingId = null; render(); return; }
+    const text = editInput ? editInput.value.trim() : '';
+    if (text) todo.text = text;
+    editingId = null;
+    saveState();
+    emitDataChanged();
+    render();
+  }
+
+  function pruneDone() {
+    const arr = getState().todos;
+    const today = startOfToday();
+    let changed = false;
+    const kept = [];
+    for (const t of arr) {
+      if (t.done) {
+        if (!t.doneAt) { t.doneAt = Date.now(); changed = true; }
+        if (t.doneAt < today) { changed = true; continue; }
+      }
+      kept.push(t);
+    }
+    if (changed) {
+      arr.splice(0, arr.length, ...kept);
+      saveState();
+    }
+  }
+
   function dueCompare(a, b) {
-    const da = dueTimestamp(a);
-    const db = dueTimestamp(b);
+    const da = dueTimestamp(a.due);
+    const db = dueTimestamp(b.due);
     if (da != null && db != null) return da - db;
     if (da != null) return -1;
     if (db != null) return 1;
@@ -95,7 +162,8 @@ export function initTodo() {
   }
 
   function render() {
-    const todos = [...getState().todos];
+    const all = getState().todos;
+    const todos = query ? all.filter(t => t.text.toLowerCase().includes(query)) : [...all];
     todos.sort((a, b) => {
       if (a.done !== b.done) return a.done ? 1 : -1;
       const pa = RANK[a.priority] ?? 2;
@@ -106,16 +174,28 @@ export function initTodo() {
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
     list.innerHTML = '';
-    if (!todos.length) {
+    if (!all.length) {
       list.innerHTML = '<li class="empty-hint">还没有待办，添加一条开始吧</li>';
       return;
     }
+    if (!todos.length) {
+      list.innerHTML = '<li class="empty-hint">没有匹配的待办</li>';
+      return;
+    }
     for (const t of todos) {
+      const editing = t.id === editingId;
+      const textBlock = editing
+        ? `<div class="todo-edit-row">
+            <input class="input todo-edit-input" type="text" maxlength="200" value="${escapeHtml(t.text)}" />
+            <button class="icon-btn todo-edit-save" type="button" title="保存">✓</button>
+            <button class="icon-btn todo-edit-cancel" type="button" title="取消">✕</button>
+          </div>`
+        : `<span class="todo-text">${escapeHtml(t.text)}</span>`;
       const li = el(`
         <li class="todo-item prio-${t.priority}${t.done ? ' done' : ''}" data-id="${t.id}">
           <input class="todo-check" type="checkbox"${t.done ? ' checked' : ''} />
           <div class="todo-main">
-            <span class="todo-text">${escapeHtml(t.text)}</span>
+            ${textBlock}
             <div class="todo-meta">
               <select class="todo-prio" title="优先级">
                 <option value="urgent"${t.priority === 'urgent' ? ' selected' : ''}>最高</option>
@@ -127,6 +207,7 @@ export function initTodo() {
                 <span class="todo-due-icon">📅</span>
                 <input class="todo-due-input" type="date" value="${escapeHtml(dueValue(t.due))}" />
               </label>
+              <button class="icon-btn todo-edit" type="button" title="编辑">✎</button>
               <button class="icon-btn todo-del" type="button" title="删除">✕</button>
             </div>
           </div>

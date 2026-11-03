@@ -206,6 +206,9 @@ textarea { resize: vertical; }
 /* 待办 */
 .todo-form { display: flex; gap: 8px; }
 .todo-input { flex: 1; }
+.todo-search { width: 100%; margin-top: 10px; }
+.todo-edit-row { display: flex; align-items: center; gap: 8px; }
+.todo-edit-row .input { flex: 1; min-width: 0; }
 .todo-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 
 .todo-item {
@@ -275,15 +278,18 @@ textarea { resize: vertical; }
 .todo-due-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .7; }
 body[data-theme="dark"] .todo-due-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 
+.todo-edit,
 .todo-del {
   font-size: 14px;
   opacity: 0;
   transition: opacity .15s ease;
-  margin-left: auto;
 }
+.todo-edit { margin-left: auto; }
+.todo-item:hover .todo-edit,
 .todo-item:hover .todo-del,
+.todo-item:focus-within .todo-edit,
 .todo-item:focus-within .todo-del { opacity: 1; }
-@media (hover: none) { .todo-del { opacity: 1; } }
+@media (hover: none) { .todo-edit, .todo-del { opacity: 1; } }
 
 /* 待办优先级（半透明大框） */
 .todo-item.prio-urgent { --prio-bg: rgba(157, 107, 255, 0.12); --prio-bg-hover: rgba(157, 107, 255, 0.20); --prio-border: rgba(157, 107, 255, 0.30); }
