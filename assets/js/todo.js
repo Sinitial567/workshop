@@ -74,16 +74,21 @@ export function initTodo() {
     if (!item) return;
     const todo = getState().todos.find(t => t.id === item.dataset.id);
     if (!todo) return;
+    let changed = false;
     if (e.target.matches('.todo-check')) {
       todo.done = e.target.checked;
       if (todo.done) { todo.reminded = true; todo.doneAt = Date.now(); }
       else { todo.doneAt = null; }
+      changed = true;
     } else if (e.target.matches('.todo-due-input')) {
       todo.due = e.target.value;
       todo.reminded = false;
+      changed = true;
     } else if (e.target.matches('.todo-prio')) {
       todo.priority = e.target.value;
+      changed = true;
     }
+    if (!changed) return;
     saveState();
     emitDataChanged();
     render();

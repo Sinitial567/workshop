@@ -5,8 +5,8 @@ const COLORS = ['#ffd166', '#f4a261', '#7bd88f', '#6cc7e8', '#b99aff', '#f78fb3'
 const NOTE_EDGE = 8;
 const NOTE_MIN_W = 96;
 const NOTE_MIN_H = 72;
-const NOTE_DEF_W = 168;
-const NOTE_DEF_H = 136;
+const NOTE_DEF_W = 140;
+const NOTE_DEF_H = 110;
 const INTERACTIVE = 'textarea, button, a, select, input';
 
 export function initNotes() {
@@ -29,8 +29,8 @@ export function initNotes() {
 
   function ensureGeometry(n, index) {
     if (n.x == null || n.y == null) {
-      n.x = 12 + (index % 3) * (NOTE_DEF_W + 12);
-      n.y = 12 + Math.floor(index / 3) * (NOTE_DEF_H + 12);
+      n.x = 12 + (index % 2) * (NOTE_DEF_W + 12);
+      n.y = 12 + Math.floor(index / 2) * (NOTE_DEF_H + 12);
     }
     if (n.w == null) n.w = NOTE_DEF_W;
     if (n.h == null) n.h = NOTE_DEF_H;
@@ -41,13 +41,27 @@ export function initNotes() {
     return COLORS[notes.length % COLORS.length];
   }
 
+  function clampNotes() {
+    const w = grid.clientWidth;
+    if (!w) return;
+    const minX = 8;
+    let changed = false;
+    for (const n of getState().notes) {
+      const nw = n.w || NOTE_DEF_W;
+      const maxX = Math.max(minX, w - 8 - nw);
+      if ((n.x || 0) > maxX) { n.x = maxX; changed = true; }
+      if ((n.x || 0) < minX) { n.x = minX; changed = true; }
+      if ((n.y || 0) < 8) { n.y = 8; changed = true; }
+    }
+    if (changed) { saveState(); render(); updateStageHeight(); }
+  }
   function updateStageHeight() {
     let bottom = 0;
     for (const n of getState().notes) {
       const b = (n.y || 0) + (n.h || NOTE_DEF_H);
       if (b > bottom) bottom = b;
     }
-    grid.style.height = Math.max(180, bottom + 16) + 'px';
+    grid.style.minHeight = Math.max(260, bottom + 16) + 'px';
   }
 
   body.querySelector('[data-add]').addEventListener('click', () => {
@@ -318,5 +332,6 @@ export function initNotes() {
 
   render();
   updateStageHeight();
+  requestAnimationFrame(clampNotes);
   return card;
 }
